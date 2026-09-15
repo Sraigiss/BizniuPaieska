@@ -26,7 +26,6 @@
             color: var(--text-main);
         }
 
-        /* Hero Header */
         .header {
             background: var(--bg-gradient);
             color: white;
@@ -37,19 +36,9 @@
             box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
         }
 
-        .header h1 {
-            margin: 0 0 10px 0;
-            font-size: 2.2rem;
-            letter-spacing: -0.5px;
-        }
+        .header h1 { margin: 0 0 10px 0; font-size: 2.2rem; }
+        .header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
 
-        .header p {
-            margin: 0;
-            opacity: 0.9;
-            font-size: 1.1rem;
-        }
-
-        /* Main Container */
         .container {
             max-width: 900px;
             margin: -30px auto 40px auto;
@@ -72,9 +61,7 @@
         }
 
         @media (max-width: 650px) {
-            .input-group {
-                grid-template-columns: 1fr;
-            }
+            .input-group { grid-template-columns: 1fr; }
         }
 
         input[type="text"], select {
@@ -101,16 +88,12 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s;
             box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
         }
 
-        .btn-search:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(236, 72, 153, 0.4);
-        }
+        .btn-search:hover { transform: translateY(-2px); }
 
-        /* Preset Chips */
         .chips-container {
             display: flex;
             gap: 8px;
@@ -119,11 +102,7 @@
             align-items: center;
         }
 
-        .chips-label {
-            font-size: 13px;
-            color: #64748b;
-            font-weight: 600;
-        }
+        .chips-label { font-size: 13px; color: #64748b; font-weight: 600; }
 
         .chip {
             background: #f1f5f9;
@@ -132,16 +111,11 @@
             border-radius: 20px;
             font-size: 13px;
             cursor: pointer;
-            transition: background 0.2s;
             border: 1px solid #cbd5e1;
         }
 
-        .chip:hover {
-            background: #e2e8f0;
-            color: var(--primary);
-        }
+        .chip:hover { background: #e2e8f0; color: var(--primary); }
 
-        /* Controls Section */
         .controls {
             display: flex;
             justify-content: space-between;
@@ -150,18 +124,8 @@
             padding: 0 5px;
         }
 
-        .results-count {
-            font-size: 14px;
-            font-weight: 600;
-            color: #64748b;
-        }
-
-        /* Results List */
-        .results-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
+        .results-count { font-size: 14px; font-weight: 600; color: #64748b; }
+        .results-list { display: flex; flex-direction: column; gap: 15px; }
 
         .card {
             background: white;
@@ -172,25 +136,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        .card-info h3 {
-            margin: 0 0 8px 0;
-            color: #0f172a;
-            font-size: 18px;
-        }
-
-        .card-info p {
-            margin: 4px 0;
-            color: #64748b;
-            font-size: 14px;
-        }
+        .card-info h3 { margin: 0 0 8px 0; color: #0f172a; font-size: 18px; }
+        .card-info p { margin: 4px 0; color: #64748b; font-size: 14px; }
 
         .badge-no-website {
             background: #fef2f2;
@@ -204,16 +153,8 @@
             margin-top: 8px;
         }
 
-        .rating-box {
-            text-align: right;
-            min-width: 100px;
-        }
-
-        .rating-score {
-            font-size: 18px;
-            font-weight: 800;
-            color: #f59e0b;
-        }
+        .rating-box { text-align: right; min-width: 100px; }
+        .rating-score { font-size: 18px; font-weight: 800; color: #f59e0b; }
 
         .maps-link {
             display: inline-block;
@@ -222,10 +163,6 @@
             text-decoration: none;
             font-size: 13px;
             font-weight: 600;
-        }
-
-        .maps-link:hover {
-            text-decoration: underline;
         }
 
         .status-msg {
@@ -260,15 +197,13 @@
 <div class="container">
 
     <div id="api-error-alert" class="error-alert">
-        <strong>⚠️ Google Maps API Error:</strong> Your API Key is either invalid, missing the <i>Places API</i> feature, or billing isn't enabled.
+        <strong>⚠️ Google Maps API Error:</strong> Check console for details.
     </div>
 
     <div class="search-card">
         <div class="input-group">
-            <!-- Location Autocomplete Input -->
             <input id="location-input" type="text" placeholder="📍 Enter City or Country..." autocomplete="off">
             
-            <!-- Category Input with Datalist Suggestions -->
             <input id="business-type" list="categories" type="text" placeholder="🏷️ Select or type..." value="Restaurant">
             <datalist id="categories">
                 <option value="Restaurant"></option>
@@ -281,32 +216,14 @@
                 <option value="Dentist"></option>
                 <option value="Barber Shop"></option>
                 <option value="Hair Salon"></option>
-                <option value="Nail Salon"></option>
                 <option value="Auto Repair"></option>
-                <option value="Car Wash"></option>
-                <option value="Towing Service"></option>
                 <option value="Landscaper"></option>
                 <option value="Cleaning Service"></option>
-                <option value="Painter"></option>
-                <option value="Locksmith"></option>
-                <option value="Gym / Fitness"></option>
-                <option value="Pet Grooming"></option>
-                <option value="Veterinarian"></option>
-                <option value="Tailor / Dry Cleaner"></option>
-                <option value="Florist"></option>
-                <option value="Catering"></option>
-                <option value="Accounting"></option>
-                <option value="Lawyer / Legal"></option>
-                <option value="Daycare / Child Care"></option>
-                <option value="Pest Control"></option>
-                <option value="Handyman"></option>
-                <option value="Massage Therapist"></option>
             </datalist>
 
             <button class="btn-search" onclick="searchBusinesses()">Search</button>
         </div>
 
-        <!-- Quick Filters -->
         <div class="chips-container">
             <span class="chips-label">Popular:</span>
             <span class="chip" onclick="quickSelect('Plumber')">🔧 Plumber</span>
@@ -339,15 +256,14 @@
 
 <div id="map"></div>
 
-<!-- ====================================================================== -->
-<!-- 👇 REPLACE "INSERT YOUR API KEY HERE" BELOW WITH YOUR GOOGLE API KEY 👇 -->
-<!-- ====================================================================== -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAng9LjzznGw6JTXoI2NQoXlqcNjjGqQNY&libraries=places&callback=initAutocomplete" async defer></script>
+<!-- REPLACE WITH YOUR KEY BELOW -->
+<script src="https://maps.googleapis.com/maps/api/js?key=INSERT YOUR API KEY HERE&libraries=places&callback=initAutocomplete" async defer></script>
 
 <script>
     let autocomplete;
     let placesService;
     let rawResults = [];
+    let selectedPlaceGeometry = null;
 
     function gm_authFailure() {
         document.getElementById('api-error-alert').style.display = 'block';
@@ -356,8 +272,19 @@
     function initAutocomplete() {
         try {
             const input = document.getElementById("location-input");
+            
+            // Allow full autocomplete selection
             autocomplete = new google.maps.places.Autocomplete(input, {
-                types: ["(regions)"]
+                types: ["geocode", "establishment"]
+            });
+
+            // FIX 1: Explicitly handle when user clicks a suggestion dropdown item
+            autocomplete.addListener("place_changed", () => {
+                const place = autocomplete.getPlace();
+                if (place.geometry) {
+                    selectedPlaceGeometry = place.geometry.location;
+                    input.value = place.formatted_address || place.name;
+                }
             });
 
             placesService = new google.maps.places.PlacesService(document.getElementById("map"));
@@ -384,11 +311,19 @@
         resultsContainer.innerHTML = '<div class="status-msg">🔍 Scanning Google Maps for businesses without websites...</div>';
         rawResults = [];
 
-        const query = `${categoryText} in ${locationText}`;
+        // FIX 2: Use Location Bias if a place was selected from the dropdown
+        let request = {
+            query: `${categoryText} in ${locationText}`
+        };
 
-        placesService.textSearch({ query: query }, (results, status) => {
+        if (selectedPlaceGeometry) {
+            request.location = selectedPlaceGeometry;
+            request.radius = 20000; // Search within 20km radius of selected location
+        }
+
+        placesService.textSearch(request, (results, status, pagination) => {
             if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
-                resultsContainer.innerHTML = '<div class="status-msg">❌ No businesses found or Google API request failed.</div>';
+                resultsContainer.innerHTML = '<div class="status-msg">❌ No businesses found for this search criteria. Try a broader location or category.</div>';
                 document.getElementById("results-count").innerText = "0 leads found";
                 return;
             }
@@ -404,6 +339,7 @@
                     (details, detailStatus) => {
                         pendingDetails--;
 
+                        // Keep business only if website property does NOT exist
                         if (detailStatus === google.maps.places.PlacesServiceStatus.OK && details) {
                             if (!details.website) {
                                 rawResults.push(details);
@@ -424,7 +360,7 @@
         const resultsContainer = document.getElementById("results");
 
         if (rawResults.length === 0) {
-            resultsContainer.innerHTML = '<div class="status-msg">🎉 All businesses found in this search area already have websites!</div>';
+            resultsContainer.innerHTML = '<div class="status-msg">🎉 All businesses found in this area already have websites listed on Google!</div>';
             document.getElementById("results-count").innerText = "0 leads found";
             return;
         }
