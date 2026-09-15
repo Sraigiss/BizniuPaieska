@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead Spark - Unwebbed Business Finder</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #ec4899;
+            --bg-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 0;
+            color: var(--text-main);
+        }
+
+        /* Hero Header */
+        .header {
+            background: var(--bg-gradient);
+            color: white;
+            padding: 40px 20px 60px 20px;
+            text-align: center;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
+        }
+
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.2rem;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 900px;
+            margin: -30px auto 40px auto;
+            padding: 0 20px;
+        }
+
+        .search-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 650px) {
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .btn-search {
+            padding: 14px 28px;
+            background: var(--bg-gradient);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+        }
+
+        .btn-search:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(236, 72, 153, 0.4);
+        }
+
+        /* Preset Chips */
+        .chips-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            align-items: center;
+        }
+
+        .chips-label {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .chip {
+            background: #f1f5f9;
+            color: #475569;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid #cbd5e1;
+        }
+
+        .chip:hover {
+            background: #e2e8f0;
+            color: var(--primary);
+        }
+
+        /* Controls Section */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 25px 0 15px 0;
+            padding: 0 5px;
+        }
+
+        .results-count {
+            font-size: 14px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        /* Results List */
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-info h3 {
+            margin: 0 0 8px 0;
+            color: #0f172a;
+            font-size: 18px;
+        }
+
+        .card-info p {
+            margin: 4px 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .badge-no-website {
+            background: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fecaca;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            margin-top: 8px;
+        }
+
+        .rating-box {
+            text-align: right;
+            min-width: 100px;
+        }
+
+        .rating-score {
+            font-size: 18px;
+            font-weight: 800;
+            color: #f59e0b;
+        }
+
+        .maps-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .maps-link:hover {
+            text-decoration: underline;
+        }
+
+        .status-msg {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            color: #64748b;
+            border: 2px dashed #cbd5e1;
+        }
+
+        .error-alert {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        #map { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🚀 Lead Spark</h1>
+    <p>Discover local businesses without websites & win your next client</p>
+</div>
+
+<div class="container">
+
+    <div id="api-error-alert" class="error-alert">
+        <strong>⚠️ Google Maps API Error:</strong> Your API Key is either invalid, missing the <i>Places API</i> feature, or billing isn't enabled.
+    </div>
+
+    <div class="search-card">
+        <div class="input-group">
+            <!-- Location Autocomplete Input -->
+            <input id="location-input" type="text" placeholder="📍 Enter City or Country..." autocomplete="off">
+            
+            <!-- Category Input with Datalist Suggestions -->
+            <input id="business-type" list="categories" type="text" placeholder="🏷️ Select or type..." value="Restaurant">
+            <datalist id="categories">
+                <option value="Restaurant"></option>
+                <option value="Bakery"></option>
+                <option value="Cafe"></option>
+                <option value="Plumber"></option>
+                <option value="Electrician"></option>
+                <option value="Roofing Contractor"></option>
+                <option value="HVAC / Air Conditioning"></option>
+                <option value="Dentist"></option>
+                <option value="Barber Shop"></option>
+                <option value="Hair Salon"></option>
+                <option value="Nail Salon"></option>
+                <option value="Auto Repair"></option>
+                <option value="Car Wash"></option>
+                <option value="Towing Service"></option>
+                <option value="Landscaper"></option>
+                <option value="Cleaning Service"></option>
+                <option value="Painter"></option>
+                <option value="Locksmith"></option>
+                <option value="Gym / Fitness"></option>
+                <option value="Pet Grooming"></option>
+                <option value="Veterinarian"></option>
+                <option value="Tailor / Dry Cleaner"></option>
+                <option value="Florist"></option>
+                <option value="Catering"></option>
+                <option value="Accounting"></option>
+                <option value="Lawyer / Legal"></option>
+                <option value="Daycare / Child Care"></option>
+                <option value="Pest Control"></option>
+                <option value="Handyman"></option>
+                <option value="Massage Therapist"></option>
+            </datalist>
+
+            <button class="btn-search" onclick="searchBusinesses()">Search</button>
+        </div>
+
+        <!-- Quick Filters -->
+        <div class="chips-container">
+            <span class="chips-label">Popular:</span>
+            <span class="chip" onclick="quickSelect('Plumber')">🔧 Plumber</span>
+            <span class="chip" onclick="quickSelect('Bakery')">🥐 Bakery</span>
+            <span class="chip" onclick="quickSelect('Barber Shop')">💈 Barber</span>
+            <span class="chip" onclick="quickSelect('Auto Repair')">🚗 Auto Repair</span>
+            <span class="chip" onclick="quickSelect('Dentist')">🦷 Dentist</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <label for="sort-by" style="font-size: 14px; font-weight: 600;">Sort by:</label>
+            <select id="sort-by" style="width: auto; padding: 8px 12px;" onchange="applySortingAndRender()">
+                <option value="reviews-desc">🔥 Most Reviews</option>
+                <option value="rating-desc">⭐ Highest Rating</option>
+                <option value="rating-asc">⚠️ Lowest Rating</option>
+            </select>
+        </div>
+        <div id="results-count" class="results-count">0 leads found</div>
+    </div>
+
+    <div id="results" class="results-list">
+        <div class="status-msg">
+            Enter a location above and press <strong>Search</strong> to generate leads!
+        </div>
+    </div>
+
+</div>
+
+<div id="map"></div>
+
+<!-- ====================================================================== -->
+<!-- 👇 REPLACE "INSERT YOUR API KEY HERE" BELOW WITH YOUR GOOGLE API KEY 👇 -->
+<!-- ====================================================================== -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAng9LjzznGw6JTXoI2NQoXlqcNjjGqQNY&libraries=places&callback=initAutocomplete" async defer></script>
+
+<script>
+    let autocomplete;
+    let placesService;
+    let rawResults = [];
+
+    function gm_authFailure() {
+        document.getElementById('api-error-alert').style.display = 'block';
+    }
+
+    function initAutocomplete() {
+        try {
+            const input = document.getElementById("location-input");
+            autocomplete = new google.maps.places.Autocomplete(input, {
+                types: ["(regions)"]
+            });
+
+            placesService = new google.maps.places.PlacesService(document.getElementById("map"));
+        } catch (e) {
+            console.error("Google Maps failed to load:", e);
+            document.getElementById('api-error-alert').style.display = 'block';
+        }
+    }
+
+    function quickSelect(category) {
+        document.getElementById('business-type').value = category;
+    }
+
+    function searchBusinesses() {
+        const locationText = document.getElementById("location-input").value;
+        const categoryText = document.getElementById("business-type").value;
+        const resultsContainer = document.getElementById("results");
+
+        if (!locationText) {
+            alert("Please type in a city or country!");
+            return;
+        }
+
+        resultsContainer.innerHTML = '<div class="status-msg">🔍 Scanning Google Maps for businesses without websites...</div>';
+        rawResults = [];
+
+        const query = `${categoryText} in ${locationText}`;
+
+        placesService.textSearch({ query: query }, (results, status) => {
+            if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
+                resultsContainer.innerHTML = '<div class="status-msg">❌ No businesses found or Google API request failed.</div>';
+                document.getElementById("results-count").innerText = "0 leads found";
+                return;
+            }
+
+            let pendingDetails = results.length;
+
+            results.forEach((placeResult) => {
+                placesService.getDetails(
+                    {
+                        placeId: placeResult.place_id,
+                        fields: ["name", "formatted_address", "formatted_phone_number", "rating", "user_ratings_total", "website", "url"]
+                    },
+                    (details, detailStatus) => {
+                        pendingDetails--;
+
+                        if (detailStatus === google.maps.places.PlacesServiceStatus.OK && details) {
+                            if (!details.website) {
+                                rawResults.push(details);
+                            }
+                        }
+
+                        if (pendingDetails === 0) {
+                            applySortingAndRender();
+                        }
+                    }
+                );
+            });
+        });
+    }
+
+    function applySortingAndRender() {
+        const sortBy = document.getElementById("sort-by").value;
+        const resultsContainer = document.getElementById("results");
+
+        if (rawResults.length === 0) {
+            resultsContainer.innerHTML = '<div class="status-msg">🎉 All businesses found in this search area already have websites!</div>';
+            document.getElementById("results-count").innerText = "0 leads found";
+            return;
+        }
+
+        rawResults.sort((a, b) => {
+            const ratingA = a.rating || 0;
+            const ratingB = b.rating || 0;
+            const reviewsA = a.user_ratings_total || 0;
+            const reviewsB = b.user_ratings_total || 0;
+
+            if (sortBy === "reviews-desc") return reviewsB - reviewsA;
+            if (sortBy === "rating-desc") return ratingB - ratingA;
+            if (sortBy === "rating-asc") return ratingA - ratingB;
+        });
+
+        document.getElementById("results-count").innerText = `${rawResults.length} potential client(s) found!`;
+        resultsContainer.innerHTML = "";
+
+        rawResults.forEach((biz) => {
+            const card = document.createElement("div");
+            card.className = "card";
+
+            card.innerHTML = `
+                <div class="card-info">
+                    <h3>${biz.name}</h3>
+                    <p>📍 ${biz.formatted_address || "Address not listed"}</p>
+                    <p>📞 ${biz.formatted_phone_number || "Phone not listed"}</p>
+                    <span class="badge-no-website">🚫 No Website Found</span>
+                </div>
+                <div class="rating-box">
+                    <div class="rating-score">⭐ ${biz.rating || "N/A"}</div>
+                    <div style="font-size: 12px; color: #64748b; margin-top: 2px;">${biz.user_ratings_total || 0} reviews</div>
+                    ${biz.url ? `<a href="${biz.url}" target="_blank" class="maps-link">View Map ↗</a>` : ""}
+                </div>
+            `;
+            resultsContainer.appendChild(card);
+        });
+    }
+</script>
+
+</body>
+</html>
