@@ -14,17 +14,8 @@
             --text-main: #1f2937;
         }
 
-        * {
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: #f8fafc;
-            margin: 0;
-            padding: 0;
-            color: var(--text-main);
-        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f8fafc; margin: 0; padding: 0; color: var(--text-main); }
 
         .header {
             background: var(--bg-gradient);
@@ -39,11 +30,7 @@
         .header h1 { margin: 0 0 10px 0; font-size: 2.2rem; }
         .header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
 
-        .container {
-            max-width: 900px;
-            margin: -30px auto 40px auto;
-            padding: 0 20px;
-        }
+        .container { max-width: 900px; margin: -30px auto 40px auto; padding: 0 20px; }
 
         .search-card {
             background: var(--card-bg);
@@ -60,9 +47,7 @@
             margin-bottom: 15px;
         }
 
-        @media (max-width: 650px) {
-            .input-group { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 650px) { .input-group { grid-template-columns: 1fr; } }
 
         input[type="text"], select {
             width: 100%;
@@ -94,14 +79,7 @@
 
         .btn-search:hover { transform: translateY(-2px); }
 
-        .chips-container {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-            align-items: center;
-        }
-
+        .chips-container { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center; }
         .chips-label { font-size: 13px; color: #64748b; font-weight: 600; }
 
         .chip {
@@ -212,16 +190,12 @@
                 <option value="Plumber"></option>
                 <option value="Electrician"></option>
                 <option value="Roofing Contractor"></option>
-                <option value="HVAC / Air Conditioning"></option>
                 <option value="Dentist"></option>
                 <option value="Barber Shop"></option>
-                <option value="Hair Salon"></option>
                 <option value="Auto Repair"></option>
-                <option value="Landscaper"></option>
-                <option value="Cleaning Service"></option>
             </datalist>
 
-            <button class="btn-search" onclick="searchBusinesses()">Search</button>
+            <button class="btn-search" onclick="startDeepSearch()">Search</button>
         </div>
 
         <div class="chips-container">
@@ -256,14 +230,15 @@
 
 <div id="map"></div>
 
-<!-- REPLACE WITH YOUR KEY BELOW -->
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAng9LjzznGw6JTXoI2NQoXlqcNjjGqQNY&libraries=places&callback=initAutocomplete" async defer></script>
+<!-- REMEMBER TO PASTE YOUR ACTUAL GOOGLE API KEY HERE -->
+<script src="https://maps.googleapis.com/maps/api/js?key=INSERT YOUR API KEY HERE&libraries=places&callback=initAutocomplete" async defer></script>
 
 <script>
     let autocomplete;
     let placesService;
     let rawResults = [];
-    let selectedPlaceGeometry = null;
+    let selectedPlaceLocation = null;
+    let accumulatedPlaces = [];
 
     function gm_authFailure() {
         document.getElementById('api-error-alert').style.display = 'block';
@@ -273,17 +248,14 @@
         try {
             const input = document.getElementById("location-input");
             
-            // Allow full autocomplete selection
             autocomplete = new google.maps.places.Autocomplete(input, {
-                types: ["geocode", "establishment"]
+                types: ["(cities)"]
             });
 
-            // FIX 1: Explicitly handle when user clicks a suggestion dropdown item
             autocomplete.addListener("place_changed", () => {
                 const place = autocomplete.getPlace();
                 if (place.geometry) {
-                    selectedPlaceGeometry = place.geometry.location;
-                    input.value = place.formatted_address || place.name;
+                    selectedPlaceLocation = place.geometry.location;
                 }
             });
 
@@ -298,7 +270,7 @@
         document.getElementById('business-type').value = category;
     }
 
-    function searchBusinesses() {
+    function startDeepSearch() {
         const locationText = document.getElementById("location-input").value;
         const categoryText = document.getElementById("business-type").value;
         const resultsContainer = document.getElementById("results");
@@ -308,50 +280,75 @@
             return;
         }
 
-        resultsContainer.innerHTML = '<div class="status-msg">🔍 Scanning Google Maps for businesses without websites...</div>';
+        resultsContainer.innerHTML = '<div class="status-msg">🔍 Deep scanning multiple pages of Google Maps results...</div>';
         rawResults = [];
+        accumulatedPlaces = [];
 
-        // FIX 2: Use Location Bias if a place was selected from the dropdown
         let request = {
             query: `${categoryText} in ${locationText}`
         };
 
-        if (selectedPlaceGeometry) {
-            request.location = selectedPlaceGeometry;
-            request.radius = 20000; // Search within 20km radius of selected location
+        if (selectedPlaceLocation) {
+            request.location = selectedPlaceLocation;
+            request.radius = 15000; // Search within 15km radius
         }
 
-        placesService.textSearch(request, (results, status, pagination) => {
-            if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
-                resultsContainer.innerHTML = '<div class="status-msg">❌ No businesses found for this search criteria. Try a broader location or category.</div>';
+        // Initiate search with pagination support
+        placesService.textSearch(request, handleSearchResponse);
+    }
+
+    function handleSearchResponse(results, status, pagination) {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
+            if (accumulatedPlaces.length === 0) {
+                document.getElementById("results").innerHTML = '<div class="status-msg">❌ No businesses found for this location.</div>';
                 document.getElementById("results-count").innerText = "0 leads found";
                 return;
             }
+        } else {
+            accumulatedPlaces = accumulatedPlaces.concat(results);
+        }
 
-            let pendingDetails = results.length;
+        // Fetch up to 3 pages (Google's max limit per query = 60 places)
+        if (pagination && pagination.hasNextPage && accumulatedPlaces.length < 60) {
+            // Google requires a 2-second delay between pagination calls
+            setTimeout(() => {
+                pagination.nextPage();
+            }, 2000);
+        } else {
+            // All pages fetched, process website filtering
+            processDetailedResults(accumulatedPlaces);
+        }
+    }
 
-            results.forEach((placeResult) => {
-                placesService.getDetails(
-                    {
-                        placeId: placeResult.place_id,
-                        fields: ["name", "formatted_address", "formatted_phone_number", "rating", "user_ratings_total", "website", "url"]
-                    },
-                    (details, detailStatus) => {
-                        pendingDetails--;
+    function processDetailedResults(places) {
+        let pendingDetails = places.length;
 
-                        // Keep business only if website property does NOT exist
-                        if (detailStatus === google.maps.places.PlacesServiceStatus.OK && details) {
-                            if (!details.website) {
-                                rawResults.push(details);
-                            }
-                        }
+        if (pendingDetails === 0) {
+            applySortingAndRender();
+            return;
+        }
 
-                        if (pendingDetails === 0) {
-                            applySortingAndRender();
+        places.forEach((placeResult) => {
+            placesService.getDetails(
+                {
+                    placeId: placeResult.place_id,
+                    fields: ["name", "formatted_address", "formatted_phone_number", "rating", "user_ratings_total", "website", "url"]
+                },
+                (details, detailStatus) => {
+                    pendingDetails--;
+
+                    if (detailStatus === google.maps.places.PlacesServiceStatus.OK && details) {
+                        // Filter out businesses that HAVE a website
+                        if (!details.website) {
+                            rawResults.push(details);
                         }
                     }
-                );
-            });
+
+                    if (pendingDetails === 0) {
+                        applySortingAndRender();
+                    }
+                }
+            );
         });
     }
 
@@ -360,7 +357,7 @@
         const resultsContainer = document.getElementById("results");
 
         if (rawResults.length === 0) {
-            resultsContainer.innerHTML = '<div class="status-msg">🎉 All businesses found in this area already have websites listed on Google!</div>';
+            resultsContainer.innerHTML = '<div class="status-msg">🎉 All businesses found in this search area already have websites listed on Google!</div>';
             document.getElementById("results-count").innerText = "0 leads found";
             return;
         }
