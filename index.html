@@ -7,7 +7,6 @@
     <style>
         :root {
             --primary: #6366f1;
-            --primary-hover: #4f46e5;
             --secondary: #ec4899;
             --bg-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
             --card-bg: #ffffff;
@@ -182,8 +181,9 @@
         <div class="input-group">
             <input id="location-input" type="text" placeholder="📍 Enter City or Country..." autocomplete="off">
             
-            <input id="business-type" list="categories" type="text" placeholder="🏷️ Select or type..." value="Restaurant">
+            <input id="business-type" list="categories" type="text" placeholder="🏷️ Any / All Businesses" value="Any / All Businesses">
             <datalist id="categories">
+                <option value="Any / All Businesses"></option>
                 <option value="Restaurant"></option>
                 <option value="Bakery"></option>
                 <option value="Cafe"></option>
@@ -195,16 +195,16 @@
                 <option value="Auto Repair"></option>
             </datalist>
 
-            <button class="btn-search" onclick="startDeepSearch()">Search</button>
+            <button class="btn-search" onclick="startSearch()">Search</button>
         </div>
 
         <div class="chips-container">
             <span class="chips-label">Popular:</span>
+            <span class="chip" onclick="quickSelect('Any / All Businesses')">🎲 Any / All</span>
             <span class="chip" onclick="quickSelect('Plumber')">🔧 Plumber</span>
             <span class="chip" onclick="quickSelect('Bakery')">🥐 Bakery</span>
             <span class="chip" onclick="quickSelect('Barber Shop')">💈 Barber</span>
             <span class="chip" onclick="quickSelect('Auto Repair')">🚗 Auto Repair</span>
-            <span class="chip" onclick="quickSelect('Dentist')">🦷 Dentist</span>
         </div>
     </div>
 
@@ -230,7 +230,7 @@
 
 <div id="map"></div>
 
-<!-- REMEMBER TO PASTE YOUR ACTUAL GOOGLE API KEY HERE -->
+<!-- PASTE YOUR API KEY HERE -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAng9LjzznGw6JTXoI2NQoXlqcNjjGqQNY&libraries=places&callback=initAutocomplete" async defer></script>
 
 <script>
@@ -238,7 +238,7 @@
     let placesService;
     let rawResults = [];
     let selectedPlaceLocation = null;
-    let accumulatedPlaces = [];
+    let collectedPlacesMap = new Map();
 
     function gm_authFailure() {
         document.getElementById('api-error-alert').style.display = 'block';
@@ -247,14 +247,11 @@
     function initAutocomplete() {
         try {
             const input = document.getElementById("location-input");
-            
-            autocomplete = new google.maps.places.Autocomplete(input, {
-                types: ["(cities)"]
-            });
+            autocomplete = new google.maps.places.Autocomplete(input);
 
             autocomplete.addListener("place_changed", () => {
                 const place = autocomplete.getPlace();
-                if (place.geometry) {
+                if (place && place.geometry) {
                     selectedPlaceLocation = place.geometry.location;
                 }
             });
@@ -270,9 +267,9 @@
         document.getElementById('business-type').value = category;
     }
 
-    function startDeepSearch() {
+    function startSearch() {
         const locationText = document.getElementById("location-input").value;
-        const categoryText = document.getElementById("business-type").value;
+        let categoryText = document.getElementById("business-type").value;
         const resultsContainer = document.getElementById("results");
 
         if (!locationText) {
@@ -280,53 +277,52 @@
             return;
         }
 
-        resultsContainer.innerHTML = '<div class="status-msg">🔍 Deep scanning multiple pages of Google Maps results...</div>';
+        resultsContainer.innerHTML = '<div class="status-msg">🔍 Scanning Google Maps for businesses without websites...</div>';
         rawResults = [];
-        accumulatedPlaces = [];
+        collectedPlacesMap.clear();
+
+        // Handle "Any / All Businesses" query format
+        let querySearch;
+        if (!categoryText || categoryText === "Any / All Businesses") {
+            querySearch = `local services and businesses in ${locationText}`;
+        } else {
+            querySearch = `${categoryText} in ${locationText}`;
+        }
 
         let request = {
-            query: `${categoryText} in ${locationText}`
+            query: querySearch
         };
 
         if (selectedPlaceLocation) {
             request.location = selectedPlaceLocation;
-            request.radius = 15000; // Search within 15km radius
+            request.radius = 15000;
         }
 
-        // Initiate search with pagination support
-        placesService.textSearch(request, handleSearchResponse);
-    }
-
-    function handleSearchResponse(results, status, pagination) {
-        if (status !== google.maps.places.PlacesServiceStatus.OK || !results) {
-            if (accumulatedPlaces.length === 0) {
-                document.getElementById("results").innerHTML = '<div class="status-msg">❌ No businesses found for this location.</div>';
-                document.getElementById("results-count").innerText = "0 leads found";
-                return;
+        placesService.textSearch(request, (results, status, pagination) => {
+            if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                results.forEach(p => collectedPlacesMap.set(p.place_id, p));
             }
-        } else {
-            accumulatedPlaces = accumulatedPlaces.concat(results);
-        }
 
-        // Fetch up to 3 pages (Google's max limit per query = 60 places)
-        if (pagination && pagination.hasNextPage && accumulatedPlaces.length < 60) {
-            // Google requires a 2-second delay between pagination calls
-            setTimeout(() => {
-                pagination.nextPage();
-            }, 2000);
-        } else {
-            // All pages fetched, process website filtering
-            processDetailedResults(accumulatedPlaces);
-        }
+            if (pagination && pagination.hasNextPage && collectedPlacesMap.size < 40) {
+                setTimeout(() => {
+                    pagination.nextPage();
+                }, 1500);
+            } else {
+                processWebsiteCheck(Array.from(collectedPlacesMap.values()));
+            }
+        });
     }
 
-    function processDetailedResults(places) {
-        let pendingDetails = places.length;
-
-        if (pendingDetails === 0) {
-            applySortingAndRender();
+    function processWebsiteCheck(places) {
+        const resultsContainer = document.getElementById("results");
+        
+        if (!places || places.length === 0) {
+            resultsContainer.innerHTML = '<div class="status-msg">❌ No businesses found for this location.</div>';
+            document.getElementById("results-count").innerText = "0 leads found";
             return;
         }
+
+        let pendingDetails = places.length;
 
         places.forEach((placeResult) => {
             placesService.getDetails(
@@ -338,7 +334,6 @@
                     pendingDetails--;
 
                     if (detailStatus === google.maps.places.PlacesServiceStatus.OK && details) {
-                        // Filter out businesses that HAVE a website
                         if (!details.website) {
                             rawResults.push(details);
                         }
@@ -357,7 +352,7 @@
         const resultsContainer = document.getElementById("results");
 
         if (rawResults.length === 0) {
-            resultsContainer.innerHTML = '<div class="status-msg">🎉 All businesses found in this search area already have websites listed on Google!</div>';
+            resultsContainer.innerHTML = '<div class="status-msg">🎉 All businesses found in this area already have websites listed on Google!</div>';
             document.getElementById("results-count").innerText = "0 leads found";
             return;
         }
