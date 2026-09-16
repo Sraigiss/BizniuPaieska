@@ -179,32 +179,31 @@
 
     <div class="search-card">
         <div class="input-group">
-            <input id="location-input" type="text" placeholder="📍 Enter City or Country..." autocomplete="off">
+            <input id="location-input" type="text" placeholder="📍 Select City (e.g., Vilnius)..." autocomplete="off">
             
-            <input id="business-type" list="categories" type="text" placeholder="🏷️ Any / All Businesses" value="Any / All Businesses">
-            <datalist id="categories">
-                <option value="Any / All Businesses"></option>
-                <option value="Restaurant"></option>
-                <option value="Bakery"></option>
-                <option value="Cafe"></option>
-                <option value="Plumber"></option>
-                <option value="Electrician"></option>
-                <option value="Roofing Contractor"></option>
-                <option value="Dentist"></option>
-                <option value="Barber Shop"></option>
-                <option value="Auto Repair"></option>
-            </datalist>
+            <select id="business-type">
+                <option value="establishment">🎲 Any / All Businesses</option>
+                <option value="restaurant" selected>🍽️ Restaurants & Dining</option>
+                <option value="cafe">☕ Cafes & Bakeries</option>
+                <option value="store">🛍️ Shopping & Stores</option>
+                <option value="car_repair">🚗 Auto Repair & Mechanics</option>
+                <option value="beauty_salon">💇 Hair & Beauty Salons</option>
+                <option value="plumber">🔧 Plumbers</option>
+                <option value="electrician">⚡ Electricians</option>
+                <option value="dentist">🦷 Dentists & Clinics</option>
+                <option value="gym">🏋️ Gyms & Fitness</option>
+            </select>
 
             <button class="btn-search" onclick="startSearch()">Search</button>
         </div>
 
         <div class="chips-container">
             <span class="chips-label">Popular:</span>
-            <span class="chip" onclick="quickSelect('Any / All Businesses')">🎲 Any / All</span>
-            <span class="chip" onclick="quickSelect('Plumber')">🔧 Plumber</span>
-            <span class="chip" onclick="quickSelect('Bakery')">🥐 Bakery</span>
-            <span class="chip" onclick="quickSelect('Barber Shop')">💈 Barber</span>
-            <span class="chip" onclick="quickSelect('Auto Repair')">🚗 Auto Repair</span>
+            <span class="chip" onclick="quickSelect('establishment')">🎲 Any / All</span>
+            <span class="chip" onclick="quickSelect('restaurant')">🍽️ Restaurants</span>
+            <span class="chip" onclick="quickSelect('cafe')">☕ Cafes</span>
+            <span class="chip" onclick="quickSelect('car_repair')">🚗 Auto Repair</span>
+            <span class="chip" onclick="quickSelect('beauty_salon')">💇 Salons</span>
         </div>
     </div>
 
@@ -222,7 +221,7 @@
 
     <div id="results" class="results-list">
         <div class="status-msg">
-            Enter a location above and press <strong>Search</strong> to generate leads!
+            Enter a city above and press <strong>Search</strong> to scan a 30 km radius!
         </div>
     </div>
 
@@ -236,6 +235,7 @@
 <script>
     let autocomplete;
     let placesService;
+    let geocoder;
     let rawResults = [];
     let selectedPlaceLocation = null;
     let collectedPlacesMap = new Map();
@@ -247,7 +247,11 @@
     function initAutocomplete() {
         try {
             const input = document.getElementById("location-input");
-            autocomplete = new google.maps.places.Autocomplete(input);
+            
+            // Limit autocomplete to cities/regions for clean coordinate mapping
+            autocomplete = new google.maps.places.Autocomplete(input, {
+                types: ["(cities)"]
+            });
 
             autocomplete.addListener("place_changed", () => {
                 const place = autocomplete.getPlace();
@@ -257,56 +261,64 @@
             });
 
             placesService = new google.maps.places.PlacesService(document.getElementById("map"));
+            geocoder = new google.maps.Geocoder();
         } catch (e) {
             console.error("Google Maps failed to load:", e);
             document.getElementById('api-error-alert').style.display = 'block';
         }
     }
 
-    function quickSelect(category) {
-        document.getElementById('business-type').value = category;
+    function quickSelect(typeValue) {
+        document.getElementById('business-type').value = typeValue;
     }
 
     function startSearch() {
         const locationText = document.getElementById("location-input").value;
-        let categoryText = document.getElementById("business-type").value;
+        const selectedType = document.getElementById("business-type").value;
         const resultsContainer = document.getElementById("results");
 
         if (!locationText) {
-            alert("Please type in a city or country!");
+            alert("Please type and select a city!");
             return;
         }
 
-        resultsContainer.innerHTML = '<div class="status-msg">🔍 Scanning Google Maps for businesses without websites...</div>';
+        resultsContainer.innerHTML = '<div class="status-msg">🔍 Scanning 30 km radius for registered businesses without websites...</div>';
         rawResults = [];
         collectedPlacesMap.clear();
 
-        // Handle "Any / All Businesses" query format
-        let querySearch;
-        if (!categoryText || categoryText === "Any / All Businesses") {
-            querySearch = `local services and businesses in ${locationText}`;
+        // If user typed a city name without picking from autocomplete dropdown, geocode it first
+        if (!selectedPlaceLocation) {
+            geocoder.geocode({ address: locationText }, (results, status) => {
+                if (status === "OK" && results[0]) {
+                    selectedPlaceLocation = results[0].geometry.location;
+                    executeNearbySearch(selectedPlaceLocation, selectedType);
+                } else {
+                    resultsContainer.innerHTML = '<div class="status-msg">❌ Could not locate coordinates for this city. Please pick from the dropdown suggestions.</div>';
+                }
+            });
         } else {
-            querySearch = `${categoryText} in ${locationText}`;
+            executeNearbySearch(selectedPlaceLocation, selectedType);
         }
+    }
 
+    function executeNearbySearch(location, type) {
+        // Build 30 km (30,000 meters) Nearby Search request using Google System Types
         let request = {
-            query: querySearch
+            location: location,
+            radius: 30000,
+            type: type
         };
 
-        if (selectedPlaceLocation) {
-            request.location = selectedPlaceLocation;
-            request.radius = 15000;
-        }
-
-        placesService.textSearch(request, (results, status, pagination) => {
+        placesService.nearbySearch(request, (results, status, pagination) => {
             if (status === google.maps.places.PlacesServiceStatus.OK && results) {
                 results.forEach(p => collectedPlacesMap.set(p.place_id, p));
             }
 
-            if (pagination && pagination.hasNextPage && collectedPlacesMap.size < 40) {
+            // Fetch pagination if available (up to 60 places per category radius sweep)
+            if (pagination && pagination.hasNextPage && collectedPlacesMap.size < 60) {
                 setTimeout(() => {
                     pagination.nextPage();
-                }, 1500);
+                }, 1800);
             } else {
                 processWebsiteCheck(Array.from(collectedPlacesMap.values()));
             }
@@ -317,7 +329,7 @@
         const resultsContainer = document.getElementById("results");
         
         if (!places || places.length === 0) {
-            resultsContainer.innerHTML = '<div class="status-msg">❌ No businesses found for this location.</div>';
+            resultsContainer.innerHTML = '<div class="status-msg">❌ No businesses found for this category within a 30 km radius.</div>';
             document.getElementById("results-count").innerText = "0 leads found";
             return;
         }
@@ -334,6 +346,7 @@
                     pendingDetails--;
 
                     if (detailStatus === google.maps.places.PlacesServiceStatus.OK && details) {
+                        // KEEP ONLY BUSINESSES WITHOUT A WEBSITE FIELD
                         if (!details.website) {
                             rawResults.push(details);
                         }
@@ -352,7 +365,7 @@
         const resultsContainer = document.getElementById("results");
 
         if (rawResults.length === 0) {
-            resultsContainer.innerHTML = '<div class="status-msg">🎉 All businesses found in this area already have websites listed on Google!</div>';
+            resultsContainer.innerHTML = '<div class="status-msg">🎉 All registered businesses in this 30 km area have websites listed on Google Maps!</div>';
             document.getElementById("results-count").innerText = "0 leads found";
             return;
         }
@@ -368,7 +381,7 @@
             if (sortBy === "rating-asc") return ratingA - ratingB;
         });
 
-        document.getElementById("results-count").innerText = `${rawResults.length} potential client(s) found!`;
+        document.getElementById("results-count").innerText = `${rawResults.length} potential client(s) found within 30 km!`;
         resultsContainer.innerHTML = "";
 
         rawResults.forEach((biz) => {
