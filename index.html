@@ -151,6 +151,28 @@
             border: 2px dashed #cbd5e1;
         }
 
+        .load-more-container {
+            text-align: center;
+            margin-top: 25px;
+        }
+
+        .btn-load-more {
+            background: #ffffff;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-load-more:hover {
+            background: var(--primary);
+            color: #ffffff;
+        }
+
         .error-alert {
             background: #fef2f2;
             border: 1px solid #fca5a5;
@@ -225,6 +247,10 @@
         </div>
     </div>
 
+    <div class="load-more-container">
+        <button id="btn-load-more" class="btn-load-more" style="display: none;" onclick="loadNextBatch()">🔄 Load More Results</button>
+    </div>
+
 </div>
 
 <div id="map"></div>
@@ -238,7 +264,7 @@
     let geocoder;
     let rawResults = [];
     let selectedPlaceLocation = null;
-    let collectedPlacesMap = new Map();
+    let nextPagePagination = null;
 
     function gm_authFailure() {
         document.getElementById('api-error-alert').style.display = 'block';
@@ -247,8 +273,6 @@
     function initAutocomplete() {
         try {
             const input = document.getElementById("location-input");
-            
-            // Limit autocomplete to cities/regions for clean coordinate mapping
             autocomplete = new google.maps.places.Autocomplete(input, {
                 types: ["(cities)"]
             });
@@ -283,10 +307,10 @@
         }
 
         resultsContainer.innerHTML = '<div class="status-msg">🔍 Scanning 30 km radius for registered businesses without websites...</div>';
+        document.getElementById("btn-load-more").style.display = "none";
         rawResults = [];
-        collectedPlacesMap.clear();
+        nextPagePagination = null;
 
-        // If user typed a city name without picking from autocomplete dropdown, geocode it first
         if (!selectedPlaceLocation) {
             geocoder.geocode({ address: locationText }, (results, status) => {
                 if (status === "OK" && results[0]) {
@@ -302,7 +326,6 @@
     }
 
     function executeNearbySearch(location, type) {
-        // Build 30 km (30,000 meters) Nearby Search request using Google System Types
         let request = {
             location: location,
             radius: 30000,
@@ -311,29 +334,32 @@
 
         placesService.nearbySearch(request, (results, status, pagination) => {
             if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-                results.forEach(p => collectedPlacesMap.set(p.place_id, p));
-            }
-
-            // Fetch pagination if available (up to 60 places per category radius sweep)
-            if (pagination && pagination.hasNextPage && collectedPlacesMap.size < 60) {
-                setTimeout(() => {
-                    pagination.nextPage();
-                }, 1800);
+                // Save pagination token for the Load More button
+                nextPagePagination = pagination && pagination.hasNextPage ? pagination : null;
+                processWebsiteCheck(results);
             } else {
-                processWebsiteCheck(Array.from(collectedPlacesMap.values()));
+                if (rawResults.length === 0) {
+                    document.getElementById("results").innerHTML = '<div class="status-msg">❌ No businesses found for this category within a 30 km radius.</div>';
+                    document.getElementById("results-count").innerText = "0 leads found";
+                }
             }
         });
     }
 
-    function processWebsiteCheck(places) {
-        const resultsContainer = document.getElementById("results");
-        
-        if (!places || places.length === 0) {
-            resultsContainer.innerHTML = '<div class="status-msg">❌ No businesses found for this category within a 30 km radius.</div>';
-            document.getElementById("results-count").innerText = "0 leads found";
-            return;
-        }
+    function loadNextBatch() {
+        if (nextPagePagination && nextPagePagination.hasNextPage) {
+            const btn = document.getElementById("btn-load-more");
+            btn.innerText = "⏳ Fetching next batch...";
+            btn.disabled = true;
 
+            // Google requires a brief pause before activating the next page token
+            setTimeout(() => {
+                nextPagePagination.nextPage();
+            }, 1200);
+        }
+    }
+
+    function processWebsiteCheck(places) {
         let pendingDetails = places.length;
 
         places.forEach((placeResult) => {
@@ -363,10 +389,12 @@
     function applySortingAndRender() {
         const sortBy = document.getElementById("sort-by").value;
         const resultsContainer = document.getElementById("results");
+        const loadMoreBtn = document.getElementById("btn-load-more");
 
         if (rawResults.length === 0) {
-            resultsContainer.innerHTML = '<div class="status-msg">🎉 All registered businesses in this 30 km area have websites listed on Google Maps!</div>';
+            resultsContainer.innerHTML = '<div class="status-msg">🎉 All registered businesses found in this batch have websites listed on Google Maps!</div>';
             document.getElementById("results-count").innerText = "0 leads found";
+            loadMoreBtn.style.display = "none";
             return;
         }
 
@@ -403,6 +431,15 @@
             `;
             resultsContainer.appendChild(card);
         });
+
+        // Show/Hide "Load More" button based on Google pagination status
+        if (nextPagePagination && nextPagePagination.hasNextPage) {
+            loadMoreBtn.style.display = "inline-block";
+            loadMoreBtn.innerText = "🔄 Load More Results";
+            loadMoreBtn.disabled = false;
+        } else {
+            loadMoreBtn.style.display = "none";
+        }
     }
 </script>
 
